@@ -88,7 +88,8 @@ namespace openssl
                     }
                 });
 
-            if (this.BuildEnvironment.Platform.Includes(EPlatform.Windows))
+            if (this.BuildEnvironment.Platform.Includes(EPlatform.Windows) &&
+                this.Librarian is VisualCCommon.Librarian)
             {
                 this.CompileAgainstPublicly<WindowsSDK.WindowsSDK>(source);
             }
