@@ -22,7 +22,7 @@ namespace openssl
             var source = this.CreateCSourceContainer("$(packagedir)/ssl/*.c", filter: new System.Text.RegularExpressions.Regex(@"^((?!.*ssl_task)(?!.*test\.).*)$"));
 
             source.AddFiles("$(packagedir)/crypto/*.c", filter: new System.Text.RegularExpressions.Regex(@"^((?!.*LPdir_*)(?!.*ppc*)(?!.*s390xcap)(?!.*sparc*)(?!.*test\.)(?!.*armcap).*)$"));
-            source.AddFiles("$(packagedir)/crypto/aes/*.c");
+            source.AddFiles("$(packagedir)/crypto/aes/*.c", filter: new System.Text.RegularExpressions.Regex(@"^((?!.*_x86core).*)$")); // avoids duplicate symbols
             source.AddFiles("$(packagedir)/crypto/asn1/*.c");
             source.AddFiles("$(packagedir)/crypto/bio/*.c", filter: new System.Text.RegularExpressions.Regex(@"^((?!.*bss_rtcp).*)$"));
             source.AddFiles("$(packagedir)/crypto/bn/*.c", filter: new System.Text.RegularExpressions.Regex(@"^((?!.*exp)(?!.*test\.)(?!.*speed\.).*)$"));
@@ -84,6 +84,15 @@ namespace openssl
                         var cCompiler = settings as C.ICOnlyCompilerSettings;
                         cCompiler.LanguageStandard = C.ELanguageStandard.GNU89; // in order to compile asm statements
                     }
+                });
+
+            source.Children.Where(item => item.InputPath.Parse().EndsWith("des_enc.c")).ToList().ForEach(item =>
+                {
+                    item.PrivatePatch(settings =>
+                        {
+                            var compiler = settings as C.ICommonCompilerSettings;
+                            compiler.PreprocessorDefines.Add("DES_DEFAULT_OPTIONS"); // avoids duplicate symbols
+                        });
                 });
 
             this.PublicPatch((settings, appliedTo) =>
