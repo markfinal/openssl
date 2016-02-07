@@ -32,7 +32,7 @@ namespace openssl
             source.AddFiles("$(packagedir)/crypto/cmac/*.c");
             source.AddFiles("$(packagedir)/crypto/cms/*.c");
             source.AddFiles("$(packagedir)/crypto/conf/conf_*.c");
-            source.AddFiles("$(packagedir)/crypto/des/*.c", filter: new System.Text.RegularExpressions.Regex(@"^((?!.*des\.c)(?!.*des_opts)(?!.*read_pwd)(?!.*speed)(?!.*test\.)(?!.*rpw).*)$"));
+            source.AddFiles("$(packagedir)/crypto/des/*.c", filter: new System.Text.RegularExpressions.Regex(@"^((?!.*des\.c)(?!.*des_opts)(?!.*read_pwd)(?!.*speed)(?!.*test\.)(?!.*rpw)(?!.*ncbc_enc).*)$")); // ncbc_enc is #included in source
             source.AddFiles("$(packagedir)/crypto/dh/*.c", filter: new System.Text.RegularExpressions.Regex(@"^((?!.*p512)(?!.*p192)(?!.*p1024)(?!.*dhtest).*)$"));
             source.AddFiles("$(packagedir)/crypto/dsa/*.c", filter: new System.Text.RegularExpressions.Regex(@"^((?!.*dsagen)(?!.*test\.).*)$"));
             source.AddFiles("$(packagedir)/crypto/dso/*.c");
@@ -84,15 +84,6 @@ namespace openssl
                         var cCompiler = settings as C.ICOnlyCompilerSettings;
                         cCompiler.LanguageStandard = C.ELanguageStandard.GNU89; // in order to compile asm statements
                     }
-                });
-
-            source.Children.Where(item => item.InputPath.Parse().EndsWith("des_enc.c")).ToList().ForEach(item =>
-                {
-                    item.PrivatePatch(settings =>
-                        {
-                            var compiler = settings as C.ICommonCompilerSettings;
-                            compiler.PreprocessorDefines.Add("DES_DEFAULT_OPTIONS"); // avoids duplicate symbols
-                        });
                 });
 
             this.PublicPatch((settings, appliedTo) =>
