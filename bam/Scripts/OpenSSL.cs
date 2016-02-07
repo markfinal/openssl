@@ -84,6 +84,12 @@ namespace openssl
                         var cCompiler = settings as C.ICOnlyCompilerSettings;
                         cCompiler.LanguageStandard = C.ELanguageStandard.GNU89; // in order to compile asm statements
                     }
+
+                    var vcCompiler = settings as VisualCCommon.ICommonCompilerSettings;
+                    if (null != vcCompiler)
+                    {
+                        vcCompiler.WarningLevel = VisualCCommon.EWarningLevel.Level2; // will not compile at a higher warning level
+                    }
                 });
 
             this.PublicPatch((settings, appliedTo) =>
