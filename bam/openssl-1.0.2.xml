@@ -3,6 +3,7 @@
   <Description>OpenSSL 1.0.2 build scripts</Description>
   <Dependents>
     <Package name="C" />
+    <Package name="Gcc" version="4.8" />
     <Package name="Mingw" version="4.8.1" />
     <Package name="NativeBuilder" />
     <Package name="Publisher" />

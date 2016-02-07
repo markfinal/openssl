@@ -1,4 +1,5 @@
 using Bam.Core;
+using System.Linq;
 namespace openssl
 {
     [ModuleGroup("Thirdparty/OpenSSL")]
@@ -77,6 +78,12 @@ namespace openssl
                     compiler.IncludePaths.AddUnique(this.CreateTokenizedString("$(packagedir)/crypto/asn1"));
                     compiler.IncludePaths.AddUnique(this.CreateTokenizedString("$(packagedir)/crypto/modes"));
                     compiler.IncludePaths.AddUnique(this.CreateTokenizedString("$(packagedir)/crypto/evp"));
+
+                    if (this.BuildEnvironment.Platform.Includes(EPlatform.Linux))
+                    {
+                        var cCompiler = settings as C.ICOnlyCompilerSettings;
+                        cCompiler.LanguageStandard = C.ELanguageStandard.GNU89; // in order to compile asm statements
+                    }
                 });
 
             this.PublicPatch((settings, appliedTo) =>
@@ -88,10 +95,21 @@ namespace openssl
                     }
                 });
 
-            if (this.BuildEnvironment.Platform.Includes(EPlatform.Windows) &&
-                this.Librarian is VisualCCommon.Librarian)
+            if (this.BuildEnvironment.Platform.Includes(EPlatform.Windows))
             {
-                this.CompileAgainstPublicly<WindowsSDK.WindowsSDK>(source);
+                if (this.Librarian is VisualCCommon.Librarian)
+                {
+                    this.CompileAgainstPublicly<WindowsSDK.WindowsSDK>(source);
+                }
+            }
+            else
+            {
+                source.Children.Where(item => item.InputPath.Parse().EndsWith("cversion.c")).ToList().ForEach(item =>
+                    {
+                        var generateBuildInf = Graph.Instance.FindReferencedModule<GenerateBuildInf>();
+                        item.DependsOn(generateBuildInf);
+                        item.UsePublicPatches(generateBuildInf);
+                    });
             }
         }
     }
