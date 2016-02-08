@@ -2,61 +2,23 @@ using Bam.Core;
 namespace openssl
 {
     [ModuleGroup("Thirdparty/OpenSSL")]
-    sealed class GenerateBuildInf :
-        C.CModule
+    class GenerateBuildInf :
+        C.ProceduralHeaderFile
     {
-        private static Bam.Core.PathKey Key = Bam.Core.PathKey.Generate("OpenSSL buildinf header");
-
-        protected override void
-        Init(
-            Module parent)
+        protected override TokenizedString OutputPath
         {
-            base.Init(parent);
-            this.GeneratedPaths.Add(Key, this.CreateTokenizedString("$(packagebuilddir)/$(moduleoutputdir)/buildinf.h"));
-
-            this.PublicPatch((settings, appliedTo) =>
-                {
-                    var compiler = settings as C.ICommonCompilerSettings;
-                    if (null != compiler)
-                    {
-                        compiler.IncludePaths.AddUnique(this.CreateTokenizedString("$(packagebuilddir)/$(moduleoutputdir)"));
-                    }
-                });
-        }
-
-        public override void
-        Evaluate()
-        {
-            this.ReasonToExecute = null;
-            var outputPath = this.GeneratedPaths[Key].Parse();
-            if (!System.IO.File.Exists(outputPath))
+            get
             {
-                this.ReasonToExecute = Bam.Core.ExecuteReasoning.FileDoesNotExist(this.GeneratedPaths[Key]);
-                return;
+                return this.CreateTokenizedString("$(packagebuilddir)/$(moduleoutputdir)/buildinf.h");
             }
         }
 
-        protected override void
-        ExecuteInternal(
-            ExecutionContext context)
+        protected override string Contents
         {
-            var destPath = this.GeneratedPaths[Key].Parse();
-            var destDir = System.IO.Path.GetDirectoryName(destPath);
-            if (!System.IO.Directory.Exists(destDir))
+            get
             {
-                System.IO.Directory.CreateDirectory(destDir);
+                return string.Empty;
             }
-            using (System.IO.TextWriter writeFile = new System.IO.StreamWriter(destPath))
-            {
-            }
-            Log.Info("Writing OpenSSL buildinf header : {0}", destPath);
-        }
-
-        protected override void
-        GetExecutionPolicy(
-            string mode)
-        {
-            // TODO: do nothing
         }
     }
 }

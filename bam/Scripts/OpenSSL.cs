@@ -12,11 +12,6 @@ namespace openssl
         {
             base.Init(parent);
 
-            // TODO: this does not forward on this dependency, which is required to modules to use OpenSSL
-            // as it is a dependency for the public patch below
-            var copyStandardHeaders = Graph.Instance.FindReferencedModule<CopyStandardHeaders>();
-            this.DependsOn(copyStandardHeaders);
-
             // ssl_task.c does not compile on Windows - due to iodef.h not being found
             // TODO: may add it back on other platforms
             var source = this.CreateCSourceContainer("$(packagedir)/ssl/*.c", filter: new System.Text.RegularExpressions.Regex(@"^((?!.*ssl_task)(?!.*test\.).*)$"));
@@ -68,6 +63,7 @@ namespace openssl
             source.AddFiles("$(packagedir)/crypto/ui/*.c");
             source.AddFiles("$(packagedir)/crypto/x509/*.c", filter: new System.Text.RegularExpressions.Regex(@"^((?!.*test\.).*)$"));
             source.AddFiles("$(packagedir)/crypto/x509v3/*.c", filter: new System.Text.RegularExpressions.Regex(@"^((?!.*test\.)(?!.*v3conf)(?!.*v3prin).*)$"));
+
             source.AddFiles("$(packagedir)/engines/*.c", filter: new System.Text.RegularExpressions.Regex(@"^((?!.*gmp).*)$"));
 
             source.PrivatePatch(settings =>
@@ -92,6 +88,13 @@ namespace openssl
                     }
                 });
 
+            // note these dependencies are on SOURCE, as the headers are needed for compilation
+            var copyStandardHeaders = Graph.Instance.FindReferencedModule<CopyStandardHeaders>();
+            var generateConfig = Graph.Instance.FindReferencedModule<GenerateConfHeader>();
+            source.DependsOn(copyStandardHeaders, generateConfig);
+
+            this.Requires(copyStandardHeaders); // this is for IDE projects, which require a different level of granularity
+
             this.PublicPatch((settings, appliedTo) =>
                 {
                     var compiler = settings as C.ICommonCompilerSettings;
@@ -107,6 +110,16 @@ namespace openssl
                 {
                     this.CompileAgainstPublicly<WindowsSDK.WindowsSDK>(source);
                 }
+
+                source.Children.Where(item => item.InputPath.Parse().EndsWith("cversion.c")).ToList().ForEach(item =>
+                    {
+                        item.PrivatePatch(settings =>
+                            {
+                                // stops buildinf.h from being included - see GenerateBuildInf for non-Windows platforms
+                                var compiler = settings as C.ICommonCompilerSettings;
+                                compiler.PreprocessorDefines.Add("NO_WINDOWS_BRAINDEATH");
+                            });
+                    });
             }
             else
             {

@@ -2,7 +2,7 @@ using Bam.Core;
 namespace openssl
 {
     [ModuleGroup("Thirdparty/OpenSSL")]
-    sealed class CopyStandardHeaders :
+    class CopyStandardHeaders :
         Publisher.Collation
     {
         protected override void
@@ -14,15 +14,12 @@ namespace openssl
             // the build mode depends on whether this path has been set or not
             if (this.GeneratedPaths.ContainsKey(Key))
             {
-                this.GeneratedPaths[Key].Aliased(this.CreateTokenizedString("$(packagebuilddir)"));
+                this.GeneratedPaths[Key].Aliased(this.CreateTokenizedString("$(packagebuilddir)/PublicHeaders"));
             }
             else
             {
-                this.RegisterGeneratedFile(Key, this.CreateTokenizedString("$(packagebuilddir)"));
+                this.RegisterGeneratedFile(Key, this.CreateTokenizedString("$(packagebuilddir)/PublicHeaders"));
             }
-
-            var generateConfig = Graph.Instance.FindReferencedModule<GenerateConfHeader>();
-            this.DependsOn(generateConfig);
 
             var sslHeader = this.IncludeFile(this.CreateTokenizedString("$(packagedir)/ssl/ssl.h"), "openssl");
             this.IncludeFile(this.CreateTokenizedString("$(packagedir)/ssl/dtls1.h"), ".", sslHeader);
